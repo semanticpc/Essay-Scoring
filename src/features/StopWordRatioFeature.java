@@ -24,7 +24,7 @@ public class StopWordRatioFeature implements Features {
    * 
    * @see features.Features#getFeatureScores()
    */
-  @Override
+  //@Override
   public HashMap<String,Double> getFeatureScores(EssayInstance instance) {
     this.featureScores.put("stratio", getScore(instance.essay));
     return this.featureScores;
