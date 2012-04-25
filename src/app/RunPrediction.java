@@ -14,10 +14,12 @@ import parser.EssayInstanceParser;
  * 
  */
 public class RunPrediction {
+	public static ArrayList<EssayInstance> instances;
+  	
   public static void main(String[] args) {
     EssayInstanceParser parser = new EssayInstanceParser();
     // Parse the input training file
-    ArrayList<EssayInstance> instances = parser.parse(
+    instances = parser.parse(
         "DataSet/training_set_rel3.tsv", true);
     
     // Get feature Scores for each instance
