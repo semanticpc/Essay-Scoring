@@ -16,10 +16,12 @@ import java.io.*;
  */
 public class RunPrediction {
 	public static final boolean debug = false;
+	public static ArrayList<EssayInstance> instances;
+
   public static void main(String[] args) {
     EssayInstanceParser parser = new EssayInstanceParser();
     // Parse the input training file
-    ArrayList<EssayInstance> instances = parser.parse(
+    instances = parser.parse(
         "DataSet/training_set_rel3.tsv", true);
 	
 	if (debug)
