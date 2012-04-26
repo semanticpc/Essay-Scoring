@@ -8,17 +8,35 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.*;
+import java.io.*;
+import java.nio.charset.*;
 
 /**
  * @author semanticpc
  * 
  */
 public class EssayInstanceParser {
-  public ArrayList<EssayInstance> parse(String filename, boolean header) {
+	/** pattern to match CSV-escaped double quotes */
+	public static final Pattern escapedDoubleQuote = Pattern.compile("\"\"");
+
+	/* characters to fix: U+00B4 2018 2019 => ', 201C 201D => " 2013 2014 => - */
+	public static final Pattern improperSingleQuote = Pattern.compile("[\u2018\u2019]");
+	public static final Pattern improperDoubleQuote = Pattern.compile("[\u201C\u201D]");
+	public static final Pattern dashes = Pattern.compile("[\u2013\u2014]");
+	
+	/** pattern to match a bunch of funkily formatted double-quotes */
+	public static final Pattern escapedFunkyQuote2 = Pattern.compile("''");
+	
+	/** sometimes the text is something like don''t or won''t */
+	public static final Pattern escapedFunkyQuote1 = Pattern.compile("(?<=\\w)''(?=\\w)");
+
+	public ArrayList<EssayInstance> parse(String filename, boolean header) {
     ArrayList<EssayInstance> eassyInstances = new ArrayList<EssayInstance>();
     BufferedReader bReader;
     try {
-      bReader = new BufferedReader(new FileReader(filename));
+	  // specify character set to be safe
+	  bReader = new BufferedReader(new InputStreamReader(new FileInputStream(filename), Charset.forName("windows-1252")));
       
       String line;
       while ((line = bReader.readLine()) != null) {
@@ -54,7 +72,7 @@ public class EssayInstanceParser {
     EssayInstance essay = new EssayInstance();
     essay.essay_id = Integer.parseInt(fields[0]);
     essay.essay_set = Integer.parseInt(fields[1]);
-    essay.essay = fields[2];
+    essay.essay = cleanupText(csvUnescape(fields[2]));
     essay.rater1_domain1 = Integer.parseInt(fields[3]);
     essay.rater2_domain1 = Integer.parseInt(fields[4]);
     essay.rater3_domain1 = parseInt(fields[5]);
@@ -116,4 +134,79 @@ public class EssayInstanceParser {
     if (input.equals("")) return -1;
     else return Integer.parseInt(input);
   }
+  
+  /**
+    * fixes the CSV-style escaping of the string
+	* @author Keith
+	*/
+  private static String csvUnescape(String field)
+	{
+	StringBuilder s = new StringBuilder(field);
+	
+	if (s.length() > 0 && s.charAt(0) == '"')
+		s.deleteCharAt(0);
+
+	if (s.length() > 0 && s.charAt(s.length() - 1) == '"')
+		s.deleteCharAt(s.length() - 1);
+	
+	Matcher m = escapedDoubleQuote.matcher(s);
+	return m.replaceAll("\"");
+	
+//	return s.toString();
+	}
+
+  /**
+    * Cleans up the long-form text:
+	* <ul>
+	* <li>Sometimes there is a '' when there should be a "
+	* </ul>
+	*
+	* I wish I could do all this in a StringBuilder but the regex stuff seems to return String.
+	* @author Keith
+	*/
+  private static String cleanupText(String field)
+	{
+	boolean debug = false;
+	field = field.trim();
+	
+	Matcher m = improperSingleQuote.matcher(field);
+	if (debug && m.find())
+		System.out.println("Improper single quote found: " + field);
+	field = m.replaceAll("'");
+	
+	m = improperDoubleQuote.matcher(field);
+	if (debug && m.find())
+		System.out.println("Improper double quote found: " + field);
+	field = m.replaceAll("\"");
+
+	m = escapedFunkyQuote1.matcher(field);
+	if (debug && m.find())
+		System.out.println("Funky single quote found: " + field);
+	field = m.replaceAll("'");
+
+	m = escapedFunkyQuote2.matcher(field);
+	if (debug && m.find())
+		System.out.println("Funky double quote found: " + field);
+	field = m.replaceAll("\"");
+
+	m = dashes.matcher(field);
+	if (debug && m.find())
+		System.out.println("Improper dash found: " + field);
+	field = m.replaceAll("-");
+	
+	// check for any weirdo characters
+	if (debug)
+		{
+		for (int i = 0; i < field.length(); i++)
+			{
+			char c = field.charAt(i);
+			if (c > 127)
+				System.out.println("Extended ASCII:  " + c);
+			}
+		}
+	
+	return field;
+	
+//	return s.toString();
+	}
 }

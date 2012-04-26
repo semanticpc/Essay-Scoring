@@ -65,4 +65,9 @@ public class EssayInstance {
   public HashMap<String,Double> getFeatures() {
     return this.features;
   }
+  
+  public String toString()
+	{
+	return "ID(" + essay_id + "): " + essay;
+	}
 }
