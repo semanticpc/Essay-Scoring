@@ -1,5 +1,5 @@
 run:
-	javac -cp src src/app/RunPrediction.java
+	javac -cp src src/app/*.java src/features/*.java src/ml/*.java  src/parser/*.java
 	java -cp src app.RunPrediction
 
 docs: javadocs
