@@ -50,7 +50,7 @@ public class EssayInstance {
 	public static final Pattern paragraphPattern = Pattern.compile("\\s{3,}");
 	public static final Pattern sentencePattern = Pattern.compile("(?<=[\\.?!][^\\w\\s]?)\\s+(?![a-z])");
 	public static final Pattern wordPattern = Pattern.compile("\\s+");
-	public static final Pattern frontMatter = Pattern.compile("([^\\w@]+)(\\w.*)");
+	public static final Pattern frontMatter = Pattern.compile("([^\\w@]+)([\\w@].*)");
 	public static final Pattern backMatter = Pattern.compile("(.*\\w)(\\W+)");
 	
 	/** This list is partially from Perl Lingua::EN::Sentence */

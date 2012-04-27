@@ -18,6 +18,7 @@ import java.nio.charset.*;
 public class RunPrediction {
 	public static final boolean debug = true;
 	public static ArrayList<EssayInstance> instances;
+	public static String resourcesPath = "Resources";
 
   public static void main(String[] args) {
     EssayInstanceParser parser = new EssayInstanceParser();
