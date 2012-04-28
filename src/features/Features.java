@@ -19,5 +19,5 @@ public interface Features {
    *         features
    */
   public HashMap<String,Double> getFeatureScores(EssayInstance instance);
-  
+
 }

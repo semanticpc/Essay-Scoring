@@ -80,6 +80,24 @@ public class EssayInstance {
   }
   
   /**
+    * I'm not sure if features was supposed to be package private, but if so, then this is an accessor.
+    * @author Keith Trnka
+	*/
+  public double getFeature(String feature)
+	{
+	return features.get(feature);
+	}
+
+  /**
+    * I'm not sure if features was supposed to be package private, but if so, then this is a mutator.
+    * @author Keith Trnka
+	*/
+  public void setFeature(String feature, double value)
+	{
+	features.put(feature, value);
+	}
+  
+  /**
     * Shows the ID and parsed contents.
 	*/
   public String toString()
