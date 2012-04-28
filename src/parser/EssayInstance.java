@@ -3,9 +3,8 @@
  */
 package parser;
 
-import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.regex.*;
+import java.util.*;
 
 /**
  * @author semanticpc
@@ -86,6 +85,13 @@ public class EssayInstance {
   public double getFeature(String feature)
 	{
 	return features.get(feature);
+	}
+
+  public List<String> listFeatures()
+	{
+	ArrayList<String> fList = new ArrayList<String>(features.keySet());
+	Collections.sort(fList);
+	return fList;
 	}
 
   /**

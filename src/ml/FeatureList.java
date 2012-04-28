@@ -26,12 +26,15 @@ public class FeatureList
 		featureInstances.add(new AverageWordLengthFeature());
 
 		featureInstances.add(new IDFFeatures(instances));
+		featureInstances.add(new SentenceCoherenceFeatures());
 		
 		// be careful with using these style of % token match features and normalizing to (val-min)/(max-min) per task - there are some 4-10 word "essays" that will throw off the max on the scale
 		// Instead of normalizing with min/max, it might be better to normalize to the number of stddev away from the mean, which is a little less sensitive to those outliers
 		featureInstances.add(new PercentMatchesFeature(","));
 		featureInstances.add(new PercentMatchesFeature("!"));
 		featureInstances.add(new PercentMatchesFeature("?"));
+		featureInstances.add(new PercentMatchesFeature("the"));
+		featureInstances.add(new PercentMatchesFeature("is"));
 		featureInstances.add(new PercentMatchesFeature("@.*", true));
 		
 		// note:  this probably isn't platform safe; it should do something like take the path of RunPrediction classfile and do a relpath dynamically
@@ -56,7 +59,21 @@ public class FeatureList
 		minmaxNormalizePerTask(instances, "OOVs");
 		minmaxNormalizePerTask(instances, "obvious_typos");
 		minmaxNormalizePerTask(instances, "AverageIDF");
-		gaussianNormalizePerTask(instances, "AverageIDF");
+		zscoreNormalizePerTask(instances, "AverageIDF");
+		zscoreNormalizePerTask(instances, "overlap_coherence");
+		
+		// some analysis for feature selection
+		correlationTests(instances, 1);
+		}
+	
+	public static void correlationTests(ArrayList<EssayInstance> instances, int essay_id)
+		{
+		ArrayList<EssayInstance> task = filter(instances, essay_id);
+		assert(task.size() > 0);
+		
+		System.out.println("Correlation for essay " + essay_id + ", " + task.size() + " instances");
+		for (String feature : task.get(0).listFeatures())
+			System.out.println("\tr for " + feature + ": " + pearson(task, feature));
 		}
 
 	/**
@@ -128,7 +145,7 @@ public class FeatureList
 	  * Measure a normal distribution for each essay, convert values to z-score or whatever it's called.
 	  * @author Keith Trnka
 	  */
-	private static void gaussianNormalizePerTask(ArrayList<EssayInstance> instances, String featureName, String normalizedFeatureName)
+	private static void zscoreNormalizePerTask(ArrayList<EssayInstance> instances, String featureName, String normalizedFeatureName)
 		{
 		// KT: Yes, using the singleton array is ugly, but it'd be a sin to constantly create new Doubles and re-store them.
 		HashMap<Integer,double[]> means = new HashMap<Integer,double[]>();
@@ -202,8 +219,92 @@ public class FeatureList
 	/**
 	  * Convenience function
 	  */
-	private static void gaussianNormalizePerTask(ArrayList<EssayInstance> instances, String featureName)
+	private static void zscoreNormalizePerTask(ArrayList<EssayInstance> instances, String featureName)
 		{
-		gaussianNormalizePerTask(instances, featureName, featureName + "_GauNormTask");
+		zscoreNormalizePerTask(instances, featureName, featureName + "_GauNormTask");
+		}
+	
+	/**
+	  * Compute Pearson correlation coefficient between the domain_score1 and the specified feature.
+	  * Note:  You shouldn't run this on the full set of instances, but filter by instance type.
+	  *
+	  * I originally tried Spearman correlation, but when a feature is undefined that makes it sort
+	  * according to essay_id, which (ironically) is highly correlated for some reason.  The code is
+	  * ugly as a result of coding Spearman first (but you can swap back and forth with 2 line changes).
+	  *
+	  * Note that because we're passing in a single task's instances, any of the normalizations are
+	  * basically divide-by-invariant.  So they have minimal effect.
+	  *
+	  * @author Keith Trnka
+	  */
+	public static double pearson(ArrayList<EssayInstance> filteredInstances, final String feature)
+		{
+		// sort them according to domain_score
+		Collections.sort(filteredInstances, new Comparator<EssayInstance>(){
+			public int compare(EssayInstance a, EssayInstance b)
+				{
+				return a.domain1_score - b.domain1_score;
+				}
+			});
+		
+		// now store their ranks accoring to domain_score
+		HashMap<Integer,Integer> scoreRanks = new HashMap<Integer,Integer>();
+		for (int i = 0; i < filteredInstances.size(); i++)
+			scoreRanks.put(filteredInstances.get(i).essay_id, filteredInstances.get(i).domain1_score);
+		
+		// sort them according to the feature
+		Collections.sort(filteredInstances, new Comparator<EssayInstance>(){
+			public int compare(EssayInstance a, EssayInstance b)
+				{
+				return (int)(10000 * (a.getFeature(feature) - b.getFeature(feature)));
+				}
+			});
+
+		// now store their ranks accoring to domain_score
+		HashMap<Integer,Integer> featureRanks = new HashMap<Integer,Integer>();
+		for (int i = 0; i < filteredInstances.size(); i++)
+			featureRanks.put(filteredInstances.get(i).essay_id, (int)(10000 * filteredInstances.get(i).getFeature(feature)));
+		
+		// compute the mean domain score and mean feature score
+		double meanScoreRank = 0;
+		for (int scoreRank : scoreRanks.values())
+			meanScoreRank += scoreRank;
+		meanScoreRank /= filteredInstances.size();
+			
+		double meanFeatureRank = 0;
+		for (int featureRank : featureRanks.values())
+			meanFeatureRank += featureRank;
+		meanFeatureRank /= filteredInstances.size();
+
+		// now compute the components
+		double prod = 0;
+		double score_square = 0;
+		double feature_square = 0;
+		for (EssayInstance instance : filteredInstances)
+			{
+			double scoreRank = scoreRanks.get(instance.essay_id);
+			double featureRank = featureRanks.get(instance.essay_id);
+			
+			double scoreDiff = scoreRank - meanScoreRank;
+			double featureDiff = featureRank - meanFeatureRank;
+			
+			prod += scoreDiff * featureDiff;
+			score_square += scoreDiff * scoreDiff;
+			feature_square += featureDiff * featureDiff;
+			}
+		
+		double rs = prod / Math.sqrt(score_square * feature_square);
+		
+		return rs;
+		}
+	
+	public static ArrayList<EssayInstance> filter(ArrayList<EssayInstance> instances, int essay_set)
+		{
+		ArrayList<EssayInstance> filtered = new ArrayList<EssayInstance>();
+		for (EssayInstance instance : instances)
+			if (instance.essay_set == essay_set)
+				filtered.add(instance);
+		
+		return filtered;
 		}
 	}
