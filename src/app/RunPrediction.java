@@ -46,7 +46,6 @@ public class RunPrediction {
     
     // Now we have all the instances and features
     // use any Machine Learning Tools (such as Weka)
-	System.out.println("Complete!");
     
   }
 }

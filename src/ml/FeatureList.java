@@ -21,7 +21,6 @@ public class FeatureList
 	public static void buildFeatures(ArrayList<EssayInstance> instances)
 		{
 		ArrayList<Features> featureInstances = new ArrayList<Features>();
-		featureInstances.add(new StopWordRatioFeature());
 		featureInstances.add(new LengthFeature());
 		featureInstances.add(new AverageWordLengthFeature());
 
@@ -46,6 +45,15 @@ public class FeatureList
 			{
 			System.err.println("Unable to load word list: " + exc);
 			}
+
+		try
+			{
+			featureInstances.add(new StopWordRatioFeature("Resources/stopwords.txt"));
+			}
+		catch (IOException exc)
+			{
+			System.err.println("Unable to load stopwords: " + exc);
+			}
 		
 		// compute the primary features
 		for (EssayInstance instance : instances)
@@ -64,6 +72,8 @@ public class FeatureList
 		
 		// some analysis for feature selection
 		correlationTests(instances, 1);
+		correlationTests(instances, 2);
+		correlationTests(instances, 3);
 		}
 	
 	public static void correlationTests(ArrayList<EssayInstance> instances, int essay_id)
@@ -221,7 +231,7 @@ public class FeatureList
 	  */
 	private static void zscoreNormalizePerTask(ArrayList<EssayInstance> instances, String featureName)
 		{
-		zscoreNormalizePerTask(instances, featureName, featureName + "_GauNormTask");
+		zscoreNormalizePerTask(instances, featureName, featureName + "_ZscoreNormTask");
 		}
 	
 	/**
