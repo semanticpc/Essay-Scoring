@@ -47,7 +47,7 @@ public class GaussianNormalizer implements Features
 		baseFeature = base;
 		this.baseName = baseName;
 		
-		name = baseName + "_" + type + "NormTask";
+		name = baseName + "_" + type.toString().toLowerCase() + "_norm_task";
 		this.type = type;
 		
 		HashMap<Integer,int[]> docs = new HashMap<Integer,int[]>();

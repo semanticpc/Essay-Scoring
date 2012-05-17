@@ -84,6 +84,9 @@ public class EssayInstance {
 	*/
   public double getFeature(String feature)
 	{
+	if (feature.equals("grade"))
+		return domain1_score;
+	
 	return features.get(feature);
 	}
 
